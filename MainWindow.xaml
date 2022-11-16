@@ -21,7 +21,7 @@
                 Margin="4"
                 VerticalAlignment="Center"
                 Content="Set NewWindow"
-                IsChecked="False" />
+                IsChecked="True" />
             <StackPanel Orientation="Horizontal">
                 <TextBlock
                     Margin="4"

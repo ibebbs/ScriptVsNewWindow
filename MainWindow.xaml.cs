@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -75,8 +76,14 @@ namespace ScriptVsNewWindow
                 await newWebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync("alert('NewWindowRequested')");
             }
 
+            void CancelNavigation(object? s, CoreWebView2NavigationStartingEventArgs e)
+            {
+                e.Cancel = true;
+            }
+
             if (SetNewWindow.IsChecked == true)
             {
+                newWebView.CoreWebView2.NavigationStarting += CancelNavigation;
                 e.NewWindow = newWebView.CoreWebView2;
             }
 
@@ -87,16 +94,25 @@ namespace ScriptVsNewWindow
 
             if (SetScripts.SelectedIndex == 0)
             {
+                // Locks the app
+                //newWebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync("alert('NewWindowRequested')").GetAwaiter().GetResult();
+
                 await newWebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync("alert('NewWindowRequested')");
+                newWebView.CoreWebView2.NavigationStarting -= CancelNavigation;
             }
 
             if (SetSource.IsChecked == true)
             {
-                newWebView.Source = new Uri(e.Uri);
+                await this.Dispatcher.InvokeAsync(() => newWebView.CoreWebView2.Navigate(e.Uri));
             }
 
             e.Handled = true;
             deferral.Complete();
+        }
+
+        private void CoreWebView2_SourceChanged(object? sender, CoreWebView2SourceChangedEventArgs e)
+        {
+            throw new NotImplementedException();
         }
     }
 }
