@@ -100,41 +100,40 @@ namespace ScriptVsNewWindow
             newWebView.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
             newWebView.CoreWebView2.ContentLoading += CoreWebView2_ContentLoading;
 
-            if (SetScripts.SelectedIndex == 1)
-            {
-                LogEvent($"Start Loading Scripts");
-                await newWebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync("alert('NewWindowRequested')");
-                LogEvent($"Completed Loading Scripts");
-            }
-
-            if (SetNewWindow.IsChecked == true)
-            {
-                LogEvent($"Assigning NewWindow");
-                e.NewWindow = newWebView.CoreWebView2;
-                LogEvent($"Assigned NewWindow");
-            }
+            _ = this.Dispatcher.InvokeAsync(
+                async () =>
+                {
+                    LogEvent($"Assigning NewWindow");
+                    e.NewWindow = newWebView.CoreWebView2;
+                    LogEvent($"Assigned NewWindow");
+                    LogEvent($"Starting Page.waitForDebugger");
+                    await newWebView.CoreWebView2.CallDevToolsProtocolMethodAsync("Page.waitForDebugger", "{}");
+                    LogEvent($"Completed Page.waitForDebugger");
+                }
+            );
 
             if (Delay.SelectedIndex > 0)
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(1000 * Delay.SelectedIndex));
             }
 
-            if (SetScripts.SelectedIndex == 0)
-            {
-                LogEvent($"Start Loading Scripts");
-                await newWebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync("console.log('NewWindowRequested')");
-                LogEvent($"Completed Loading Scripts");
-            }
+            _ = this.Dispatcher.InvokeAsync(
+                async () =>
+                {
+                    LogEvent($"Start Loading Scripts");
+                    await newWebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync("console.log('NewWindowRequested')");
+                    LogEvent($"Completed Loading Scripts");
+                    LogEvent($"Starting Runtime.runIfWaitingForDebugger");
+                    await newWebView.CoreWebView2.CallDevToolsProtocolMethodAsync("Runtime.runIfWaitingForDebugger", "{}");
+                    LogEvent($"Completed Runtime.runIfWaitingForDebugger");
 
-            if (SetSource.IsChecked == true)
-            {
-                LogEvent($"Setting Source - '{e.Uri}'");
-                newWebView.Source = new Uri(e.Uri);
-                LogEvent($"Set Source - '{e.Uri}'");
-            }
+                    LogEvent($"Completing deferral");
+                    deferral.Complete();
+                    LogEvent($"Completed deferral");
+                }
+            );
 
             e.Handled = true;
-            deferral.Complete();
         }
 
         private void CopyLog_Click(object sender, RoutedEventArgs e)
