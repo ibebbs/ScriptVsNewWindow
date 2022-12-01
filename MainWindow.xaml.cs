@@ -44,7 +44,7 @@ namespace ScriptVsNewWindow
             }
         }
 
-        private void CoreWebView2_NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
+        private void NewWebView2_NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
         {
             if (sender is CoreWebView2 webView)
             {
@@ -52,7 +52,15 @@ namespace ScriptVsNewWindow
             }
         }
 
-        private void CoreWebView2_ContentLoading(object? sender, CoreWebView2ContentLoadingEventArgs e)
+        private void NewWebView2_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
+        {
+            if (sender is CoreWebView2 webView)
+            {
+                LogEvent($"NavigationCompleted - '{webView.Source}'");
+            }
+        }
+
+        private void NewWebView2_ContentLoading(object? sender, CoreWebView2ContentLoadingEventArgs e)
         {
             if (sender is CoreWebView2 webView)
             {
@@ -93,17 +101,37 @@ namespace ScriptVsNewWindow
             window.Content = newWebView;
             window.Show();
 
+            var newWebViewDeferral = default(CoreWebView2Deferral);
+
             await newWebView.EnsureCoreWebView2Async();
 
+            void WebResourceRequested(object? sender, CoreWebView2WebResourceRequestedEventArgs args)
+            {
+                if (newWebViewDeferral is null)
+                {
+                    LogEvent("Starting ResourceRequested");
+                    newWebViewDeferral = args.GetDeferral();
+                    LogEvent("Completed ResourceRequested");
+                }
+            }
+
+            newWebView.CoreWebView2.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
+            newWebView.CoreWebView2.WebResourceRequested += WebResourceRequested;
             newWebView.CoreWebView2.NewWindowRequested += CoreWebView2_NewWindowRequested;
-            newWebView.CoreWebView2.NavigationStarting += CoreWebView2_NavigationStarting;
-            newWebView.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
-            newWebView.CoreWebView2.ContentLoading += CoreWebView2_ContentLoading;
+            newWebView.CoreWebView2.NavigationStarting += NewWebView2_NavigationStarting;
+            newWebView.CoreWebView2.NavigationCompleted += NewWebView2_NavigationCompleted;
+            newWebView.CoreWebView2.ContentLoading += NewWebView2_ContentLoading;
 
             if (SetScripts.SelectedIndex == 1)
             {
                 LogEvent($"Start Loading Scripts");
-                await newWebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync("alert('NewWindowRequested')");
+                await newWebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync("console.log('NewWindowRequested')");
+
+                if (newWebViewDeferral is not null)
+                {
+                    newWebViewDeferral.Complete();
+                }
+
                 LogEvent($"Completed Loading Scripts");
             }
 
@@ -123,6 +151,12 @@ namespace ScriptVsNewWindow
             {
                 LogEvent($"Start Loading Scripts");
                 await newWebView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync("console.log('NewWindowRequested')");
+
+                if (newWebViewDeferral is not null)
+                {
+                    newWebViewDeferral.Complete();
+                }
+
                 LogEvent($"Completed Loading Scripts");
             }
 

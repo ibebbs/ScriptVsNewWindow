@@ -23,7 +23,7 @@
                 Margin="4"
                 VerticalAlignment="Center"
                 Content="Set NewWindow"
-                IsChecked="False" />
+                IsChecked="True" />
             <StackPanel Orientation="Horizontal">
                 <TextBlock
                     Margin="4"
@@ -60,7 +60,7 @@
                 Margin="4"
                 VerticalAlignment="Center"
                 Content="Set Source"
-                IsChecked="True" />
+                IsChecked="False" />
             <CheckBox
                 x:Name="ScheduleNewWindow"
                 Margin="4"
